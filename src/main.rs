@@ -1,6 +1,7 @@
 mod auth;
 mod client;
 mod config;
+mod update;
 
 use clap::{Parser, Subcommand, ValueEnum};
 use client::{Client, EntriesQuery, EntryDetail, EntrySummary, Subscription};
@@ -64,6 +65,8 @@ enum Command {
     },
     /// Show one entry body
     Show { id: i64 },
+    /// Replace this binary with the latest GitHub Release
+    Update,
 }
 
 #[derive(Debug, Subcommand)]
@@ -159,6 +162,20 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
             match output {
                 OutputFormat::Json => print_json(&entry)?,
                 OutputFormat::Text => print_show(&entry),
+            }
+        }
+        Command::Update => {
+            let outcome = update::perform()?;
+            match output {
+                OutputFormat::Json => print_json(&outcome)?,
+                OutputFormat::Text => match outcome.status {
+                    update::Status::Updated => {
+                        println!("updated {} -> {}", outcome.current, outcome.latest);
+                    }
+                    update::Status::UpToDate => {
+                        println!("already {}", outcome.current);
+                    }
+                },
             }
         }
     }

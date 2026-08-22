@@ -13,6 +13,8 @@ drift auth login
 
 The script puts the latest `v*` binary in `$HOME/.local/bin`. If `drift` is not on `PATH` after that, stop. Do not fall back to curling the API.
 
+Existing install: `drift update` replaces the running binary from the latest `v*` Release. No login. Do not re-run the installer when `drift` is already on `PATH`.
+
 ## Auth
 
 ```sh
@@ -40,6 +42,7 @@ Unauthorized after a working install usually means the token was revoked on the 
 | `drift search "<query>"` | Full-text over subscribed entries (`scope=all`) |
 | `drift show <id>` | One entry; 404 if not subscribed |
 | `drift feeds` | Subscriptions; `title` is the custom title when set |
+| `drift update` | Replace this binary from GitHub Releases (no Drift token) |
 
 No mark-read, unread, star, subscribe, or saved-items commands.
 

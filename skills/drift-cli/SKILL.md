@@ -35,6 +35,7 @@ Do not use this skill for SavedItem / read-later, starring, marking read, or edi
 
 - Prefer the installed `drift` binary. Do not curl `/api/*`, do not open rdrift.app to read, and do not `cargo install` from the repo.
 - If `drift` is missing: run the install script in [reference.md](reference.md), then tell the user to run `drift auth login`. Do not invent a token.
+- If `drift` is already on PATH and needs a newer build: `drift update`. It does not need a login.
 - Default JSON is already raw (one line). Do **not** add `--output json`. Use `--output text` only when the user wants a table.
 - List first (`inbox` / `search` / `feeds`), then `show` only the ids that matter. Do not `show` every inbox row.
 - `--feed` takes **`feed_id`**, not the subscription `id`. Copy `feed_id` from `drift feeds`.
@@ -51,6 +52,7 @@ Do not use this skill for SavedItem / read-later, starring, marking read, or edi
 | Article body | `drift show <id>` |
 | List feeds | `drift feeds` |
 | Auth check | `drift auth status` |
+| Upgrade CLI | `drift update` |
 | `drift` not on PATH | run the install script, then user runs `drift auth login` |
 | First-time / expired login | user runs `drift auth login` |
 
@@ -74,6 +76,14 @@ Optional: `--limit N` (1–50, server default 20) on `inbox` and `search`.
 
 Use `entries[].id` with `show`. Use `subscriptions[].feed_id` with `--feed`.
 
+`drift update`:
+
+```json
+{"current":"0.1.2","latest":"0.1.3","status":"updated","path":"/Users/you/.local/bin/drift"}
+```
+
+`status` is `updated` or `up_to_date`.
+
 ## Common Mistakes
 
 - Passing subscription `id` to `--feed`
@@ -83,6 +93,7 @@ Use `entries[].id` with `show`. Use `subscriptions[].feed_id` with `--feed`.
 - Treating a feed post as more authoritative than current code
 - Treating `drift` as a local DB tool (`bin/rails runner`, etc.)
 - Mentioning `--token`, `--host`, or `DRIFT_TOKEN` unless the user is debugging auth or a non-prod host
+- Re-running the install script when `drift` is already on PATH — use `drift update`
 
 ## Reference
 

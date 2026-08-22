@@ -11,7 +11,7 @@ curl -fsSL https://raw.githubusercontent.com/iuhoay/drift-cli/main/scripts/insta
 drift auth login
 ```
 
-The installer downloads the latest `v*` binary (Darwin arm64 or Linux amd64) into `~/.local/bin`. Do not `cargo install` the repo.
+The installer downloads the latest `v*` binary (Darwin arm64 or Linux amd64) into `~/.local/bin`. Do not `cargo install` the repo. Later upgrades: `drift update`.
 
 Sign in through the browser (GitHub, Google, or password). The CLI never asks you to paste a token. After you click **Authorize CLI**, a one-time code is handed back to the local listener and exchanged for an API token stored in `$XDG_CONFIG_HOME/drift/config.toml` (or `~/.config/drift/config.toml`) with mode `0600`.
 
@@ -27,8 +27,9 @@ Non-interactive override: `drift auth login --token <token>` (the flag is hidden
 | `drift inbox [--feed ID] [--limit N]` | Unread entries (server default 20, max 50) |
 | `drift search <query> [--limit N]` | Search entries |
 | `drift show <id>` | Print one entry's `body` from the API |
+| `drift update` | Replace this binary with the latest GitHub Release |
 
-There is no mark-read, star, or saved-items command in v1.
+There is no mark-read, star, or saved-items command in v1. `drift update` talks to GitHub, not the Drift API, and does not need a login.
 
 ## Global flags
 
