@@ -4,21 +4,14 @@ Companion to `SKILL.md`. Source of truth lives in [`iuhoay/drift-cli`](https://g
 
 ## Install
 
-Do **not** clone the repo or run `cargo install`. The user-facing binary comes from GitHub Releases tagged `v*` on `iuhoay/drift-cli`.
+Do **not** clone the repo or run `cargo install`. Run the installer, then the user signs in:
 
 ```sh
-case "$(uname -s)-$(uname -m)" in
-  Darwin-arm64)  asset=drift-aarch64-apple-darwin ;;
-  Linux-x86_64)  asset=drift-x86_64-unknown-linux-gnu ;;
-  *) echo "no published binary for $(uname -s)-$(uname -m)"; exit 1 ;;
-esac
-gh release download --repo iuhoay/drift-cli --pattern "$asset" --dir .
-install -m 0755 "./$asset" "$HOME/.local/bin/drift"
+curl -fsSL https://raw.githubusercontent.com/iuhoay/drift-cli/main/scripts/install.sh | bash
+drift auth login
 ```
 
-`$HOME/.local/bin` must be on `PATH`. If `gh` is missing, point the user at https://github.com/iuhoay/drift-cli/releases and the matching asset — still no source install.
-
-If `drift` is not on `PATH` after that, stop. Do not fall back to curling the API.
+The script puts the latest `v*` binary in `$HOME/.local/bin`. If `drift` is not on `PATH` after that, stop. Do not fall back to curling the API.
 
 ## Auth
 

@@ -6,34 +6,14 @@ The Rails app lives in [`iuhoay/drift`](https://github.com/iuhoay/drift).
 
 ## Install
 
-Install the binary from a GitHub Release (`v*` tags). Do not `cargo install` the repo.
-
 ```sh
-case "$(uname -s)-$(uname -m)" in
-  Darwin-arm64)  asset=drift-aarch64-apple-darwin ;;
-  Linux-x86_64)  asset=drift-x86_64-unknown-linux-gnu ;;
-  *) echo "no published binary for $(uname -s)-$(uname -m)"; exit 1 ;;
-esac
-gh release download --repo iuhoay/drift-cli --pattern "$asset" --dir .
-install -m 0755 "./$asset" ~/.local/bin/drift
-```
-
-Linux amd64 uses `drift-x86_64-unknown-linux-gnu`. Put `~/.local/bin` on `PATH`.
-
-Cut a release after merging to main:
-
-```sh
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-Sign in through the browser (GitHub, Google, or password). The CLI never asks you to paste a token:
-
-```sh
+curl -fsSL https://raw.githubusercontent.com/iuhoay/drift-cli/main/scripts/install.sh | bash
 drift auth login
 ```
 
-Default host is `https://rdrift.app`. After you click **Authorize CLI**, a one-time code is handed back to the local listener and exchanged for an API token stored in `$XDG_CONFIG_HOME/drift/config.toml` (or `~/.config/drift/config.toml`) with mode `0600`.
+The installer downloads the latest `v*` binary (Darwin arm64 or Linux amd64) into `~/.local/bin`. Do not `cargo install` the repo.
+
+Sign in through the browser (GitHub, Google, or password). The CLI never asks you to paste a token. After you click **Authorize CLI**, a one-time code is handed back to the local listener and exchanged for an API token stored in `$XDG_CONFIG_HOME/drift/config.toml` (or `~/.config/drift/config.toml`) with mode `0600`.
 
 Non-interactive override: `drift auth login --token <token>` (the flag is hidden from `--help`).
 
@@ -41,7 +21,7 @@ Non-interactive override: `drift auth login --token <token>` (the flag is hidden
 
 | Command | What it does |
 | --- | --- |
-| `drift auth login` | Open a browser, sign in, store a token |
+| `drift auth login` | Open a browser, sign in, store a token (the setup step) |
 | `drift auth status` | Show host, masked token, and whether the API accepts it |
 | `drift feeds` | List subscribed feeds |
 | `drift inbox [--feed ID] [--limit N]` | Unread entries (server default 20, max 50) |
@@ -85,7 +65,15 @@ Source: [`skills/drift-cli`](skills/drift-cli). Agents install skills their own 
 ```sh
 cargo test
 cargo clippy --all-targets -- -D warnings
+bash -n scripts/install.sh
 cargo install --path .
+```
+
+Cut a release after merging to main:
+
+```sh
+git tag v0.1.2
+git push origin v0.1.2
 ```
 
 ## License

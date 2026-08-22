@@ -27,3 +27,4 @@ jobs:
         run: |
           cargo test
           cargo clippy --all-targets -- -D warnings
+          bash -n scripts/install.sh
