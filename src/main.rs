@@ -145,7 +145,7 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
         }
         Command::Search { query, limit } => {
             let client = connect(cli.host, cli.token)?;
-            let payload = client.entries(&EntriesQuery {
+            let payload = client.search(&EntriesQuery {
                 scope: Some("all"),
                 feed_id: None,
                 q: Some(&query),

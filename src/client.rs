@@ -122,8 +122,12 @@ pub fn entry_url(host: &str, id: i64) -> String {
     format!("{}/api/entries/{id}", normalize_host(host))
 }
 
+pub fn entries_collection_url(host: &str) -> String {
+    format!("{}/api/entries", normalize_host(host))
+}
+
 pub fn entries_url(host: &str, query: &EntriesQuery<'_>) -> String {
-    let mut url = format!("{}/api/entries", normalize_host(host));
+    let mut url = entries_collection_url(host);
     let mut pairs: Vec<(&str, String)> = Vec::new();
 
     if let Some(scope) = query.scope {
@@ -150,6 +154,23 @@ pub fn entries_url(host: &str, query: &EntriesQuery<'_>) -> String {
         );
     }
     url
+}
+
+pub fn entries_query_body(query: &EntriesQuery<'_>) -> serde_json::Value {
+    let mut body = serde_json::Map::new();
+    if let Some(scope) = query.scope {
+        body.insert("scope".into(), serde_json::Value::String(scope.to_string()));
+    }
+    if let Some(feed_id) = query.feed_id {
+        body.insert("feed_id".into(), serde_json::json!(feed_id));
+    }
+    if let Some(q) = query.q.filter(|value| !value.is_empty()) {
+        body.insert("q".into(), serde_json::Value::String(q.to_string()));
+    }
+    if let Some(limit) = query.limit {
+        body.insert("limit".into(), serde_json::json!(limit));
+    }
+    serde_json::Value::Object(body)
 }
 
 fn percent_encode(value: &str) -> String {
@@ -203,6 +224,10 @@ impl Client {
         self.get_json(&entries_url(&self.host, query), false)
     }
 
+    pub fn search(&self, query: &EntriesQuery<'_>) -> Result<EntriesResponse, Error> {
+        self.query_json(&entries_collection_url(&self.host), query)
+    }
+
     pub fn entry(&self, id: i64) -> Result<EntryDetail, Error> {
         self.get_json(&entry_url(&self.host, id), true)
     }
@@ -239,29 +264,48 @@ impl Client {
         }
     }
 
+    fn authorized(&self, method: &str, url: &str) -> ureq::Request {
+        self.agent
+            .request(method, url)
+            .set("Authorization", &format!("Bearer {}", self.token))
+            .set("Accept", "application/json")
+    }
+
     fn get_json<T>(&self, url: &str, not_found_is_entry: bool) -> Result<T, Error>
     where
         T: for<'de> Deserialize<'de>,
     {
-        let response = self
-            .agent
-            .get(url)
-            .set("Authorization", &format!("Bearer {}", self.token))
-            .set("Accept", "application/json")
-            .call();
+        parse_json(self.authorized("GET", url).call(), not_found_is_entry)
+    }
 
-        match response {
-            Ok(response) => response
-                .into_json()
-                .map_err(|err| Error::Parse(format!("failed to parse response: {err}"))),
-            Err(ureq::Error::Status(status, response)) => {
-                let body = response.into_string().unwrap_or_default();
-                Err(map_status(status, body, not_found_is_entry))
-            }
-            Err(ureq::Error::Transport(err)) => {
-                Err(Error::Network(format!("request failed: {err}")))
-            }
+    fn query_json<T>(&self, url: &str, query: &EntriesQuery<'_>) -> Result<T, Error>
+    where
+        T: for<'de> Deserialize<'de>,
+    {
+        parse_json(
+            self.authorized("QUERY", url)
+                .send_json(entries_query_body(query)),
+            false,
+        )
+    }
+}
+
+fn parse_json<T>(
+    response: Result<ureq::Response, ureq::Error>,
+    not_found_is_entry: bool,
+) -> Result<T, Error>
+where
+    T: for<'de> Deserialize<'de>,
+{
+    match response {
+        Ok(response) => response
+            .into_json()
+            .map_err(|err| Error::Parse(format!("failed to parse response: {err}"))),
+        Err(ureq::Error::Status(status, response)) => {
+            let body = response.into_string().unwrap_or_default();
+            Err(map_status(status, body, not_found_is_entry))
         }
+        Err(ureq::Error::Transport(err)) => Err(Error::Network(format!("request failed: {err}"))),
     }
 }
 
@@ -339,6 +383,51 @@ mod tests {
             },
         );
         assert_eq!(url, "https://rdrift.app/api/entries?q=%E4%B8%AD");
+    }
+
+    #[test]
+    fn entries_query_body_omits_empty_params() {
+        assert_eq!(
+            entries_query_body(&EntriesQuery::default()),
+            serde_json::json!({})
+        );
+    }
+
+    #[test]
+    fn entries_query_body_includes_search_fields() {
+        let body = entries_query_body(&EntriesQuery {
+            scope: Some("all"),
+            feed_id: Some(2),
+            q: Some("hello world"),
+            limit: Some(20),
+        });
+        assert_eq!(
+            body,
+            serde_json::json!({
+                "scope": "all",
+                "feed_id": 2,
+                "q": "hello world",
+                "limit": 20
+            })
+        );
+    }
+
+    #[test]
+    fn entries_query_body_keeps_cjk_as_a_json_string() {
+        let body = entries_query_body(&EntriesQuery {
+            q: Some("中"),
+            ..EntriesQuery::default()
+        });
+        assert_eq!(body, serde_json::json!({ "q": "中" }));
+        assert_eq!(body["q"], "中");
+    }
+
+    #[test]
+    fn entries_collection_url_has_no_query_string() {
+        assert_eq!(
+            entries_collection_url("https://rdrift.app/"),
+            "https://rdrift.app/api/entries"
+        );
     }
 
     #[test]
