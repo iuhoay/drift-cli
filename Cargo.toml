@@ -1,6 +1,6 @@
 [package]
 name = "drift"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "CLI client for Drift, a personal RSS reader"
 authors = ["iuhoay <iuhoay@gmail.com>"]
