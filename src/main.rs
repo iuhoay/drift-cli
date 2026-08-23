@@ -4,7 +4,7 @@ mod config;
 mod update;
 
 use clap::{Parser, Subcommand, ValueEnum};
-use client::{Client, EntriesQuery, EntryDetail, EntrySummary, Subscription};
+use client::{Client, EntriesQuery, EntryDetail, EntrySummary, Subscription, SubscriptionResponse};
 use config::Settings;
 use serde::Serialize;
 use std::process;
@@ -45,13 +45,19 @@ enum Command {
         #[command(subcommand)]
         command: AuthCommand,
     },
-    /// List subscribed feeds
-    Feeds,
+    /// List subscribed feeds, or recategorize one
+    Feeds {
+        #[command(subcommand)]
+        command: Option<FeedsCommand>,
+    },
     /// List unread inbox entries
     Inbox {
         /// Limit to one feed
         #[arg(long, value_name = "feed_id")]
         feed: Option<i64>,
+        /// Limit to one user category
+        #[arg(long)]
+        category: Option<String>,
         /// Page size (1–50; server default 20)
         #[arg(long, value_parser = clap::value_parser!(u32).range(1..=50))]
         limit: Option<u32>,
@@ -59,6 +65,9 @@ enum Command {
     /// Search entries
     Search {
         query: String,
+        /// Limit to one user category
+        #[arg(long)]
+        category: Option<String>,
         /// Page size (1–50; server default 20)
         #[arg(long, value_parser = clap::value_parser!(u32).range(1..=50))]
         limit: Option<u32>,
@@ -75,6 +84,17 @@ enum AuthCommand {
     Login,
     /// Print host and masked token; ping the API when a token is present
     Status,
+}
+
+#[derive(Debug, Subcommand)]
+enum FeedsCommand {
+    /// Set or clear a feed's category (`feed_id`, not subscription id)
+    Categorize {
+        /// feed_id from `drift feeds`
+        feed: i64,
+        /// Category name. Omit to clear.
+        category: Option<String>,
+    },
 }
 
 fn main() {
@@ -124,7 +144,7 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
             let settings = config::load(cli.host, cli.token)?;
             auth_status(output, &settings)?;
         }
-        Command::Feeds => {
+        Command::Feeds { command: None } => {
             let client = connect(cli.host, cli.token)?;
             let payload = client.subscriptions()?;
             match output {
@@ -136,21 +156,39 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
-        Command::Inbox { feed, limit } => {
+        Command::Feeds {
+            command: Some(FeedsCommand::Categorize { feed, category }),
+        } => {
             let client = connect(cli.host, cli.token)?;
+            recategorize(output, &client, feed, category)?;
+        }
+        Command::Inbox {
+            feed,
+            category,
+            limit,
+        } => {
+            let client = connect(cli.host, cli.token)?;
+            let category = present_label(category);
             let payload = client.entries(&EntriesQuery {
                 scope: Some("unread"),
                 feed_id: feed,
+                category: category.as_deref(),
                 q: None,
                 limit,
             })?;
             print_entries(output, &payload.entries, &payload)?;
         }
-        Command::Search { query, limit } => {
+        Command::Search {
+            query,
+            category,
+            limit,
+        } => {
             let client = connect(cli.host, cli.token)?;
+            let category = present_label(category);
             let payload = client.search(&EntriesQuery {
                 scope: Some("all"),
                 feed_id: None,
+                category: category.as_deref(),
                 q: Some(&query),
                 limit,
             })?;
@@ -247,8 +285,51 @@ fn print_entries(
     Ok(())
 }
 
+fn recategorize(
+    output: OutputFormat,
+    client: &Client,
+    feed_id: i64,
+    category: Option<String>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let payload = client.subscriptions()?;
+    let subscription = payload
+        .subscriptions
+        .iter()
+        .find(|item| item.feed_id == feed_id)
+        .ok_or_else(|| format!("feed {feed_id} is not in your subscriptions"))?;
+    let category = present_label(category);
+    let updated: SubscriptionResponse =
+        client.update_subscription(subscription.id, category.as_deref())?;
+    match output {
+        OutputFormat::Json => print_json(&updated)?,
+        OutputFormat::Text => print_feed_line(&updated.subscription),
+    }
+    Ok(())
+}
+
+fn present_label(value: Option<String>) -> Option<String> {
+    value.and_then(|label| {
+        let trimmed = label.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    })
+}
+
 fn print_feed_line(subscription: &Subscription) {
-    println!("{}  {}", subscription.feed_id, subscription.title);
+    match subscription
+        .category
+        .as_deref()
+        .filter(|label| !label.is_empty())
+    {
+        Some(category) => println!(
+            "{}  {}  {category}",
+            subscription.feed_id, subscription.title
+        ),
+        None => println!("{}  {}", subscription.feed_id, subscription.title),
+    }
 }
 
 fn print_entry_line(entry: &EntrySummary) {
