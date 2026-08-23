@@ -38,13 +38,17 @@ Unauthorized after a working install usually means the token was revoked on the 
 |------|------|
 | `drift inbox` | Unread subscribed entries, newest first |
 | `drift inbox --feed <feed_id>` | Same, one feed |
+| `drift inbox --category <name>` | Same, one user category (case-insensitive) |
 | `drift inbox --limit N` | 1–50 |
 | `drift search "<query>"` | Full-text over subscribed entries (`scope=all`) |
+| `drift search "<query>" --category <name>` | Same, scoped to a category |
 | `drift show <id>` | One entry; 404 if not subscribed |
-| `drift feeds` | Subscriptions; `title` is the custom title when set |
+| `drift feeds` | Subscriptions; `title` is the custom title when set; includes `category` |
+| `drift feeds categorize <feed_id> <name>` | Set that feed's category |
+| `drift feeds categorize <feed_id>` | Clear that feed's category |
 | `drift update` | Replace this binary from GitHub Releases (no Drift token) |
 
-No mark-read, unread, star, subscribe, or saved-items commands.
+The one write command is `feeds categorize`. No mark-read, unread, star, subscribe, or saved-items commands.
 
 ## Inbox vs show
 

@@ -23,13 +23,14 @@ Non-interactive override: `drift auth login --token <token>` (the flag is hidden
 | --- | --- |
 | `drift auth login` | Open a browser, sign in, store a token (the setup step) |
 | `drift auth status` | Show host, masked token, and whether the API accepts it |
-| `drift feeds` | List subscribed feeds |
-| `drift inbox [--feed ID] [--limit N]` | Unread entries (server default 20, max 50) |
-| `drift search <query> [--limit N]` | Search entries |
+| `drift feeds` | List subscribed feeds (includes `category`) |
+| `drift feeds categorize <feed_id> [category]` | Set a feed's category; omit the name to clear |
+| `drift inbox [--feed ID] [--category NAME] [--limit N]` | Unread entries (server default 20, max 50) |
+| `drift search <query> [--category NAME] [--limit N]` | Search entries |
 | `drift show <id>` | Print one entry's `body` from the API |
 | `drift update` | Replace this binary with the latest GitHub Release |
 
-There is no mark-read, star, or saved-items command in v1. `drift update` talks to GitHub, not the Drift API, and does not need a login.
+The one write command is `drift feeds categorize`. There is no mark-read, star, subscribe, or saved-items command. `drift update` talks to GitHub, not the Drift API, and does not need a login.
 
 ## Global flags
 

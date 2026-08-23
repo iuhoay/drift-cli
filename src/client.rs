@@ -8,6 +8,7 @@ const BODY_SNIPPET: usize = 200;
 pub struct EntriesQuery<'a> {
     pub scope: Option<&'a str>,
     pub feed_id: Option<i64>,
+    pub category: Option<&'a str>,
     pub q: Option<&'a str>,
     pub limit: Option<u32>,
 }
@@ -23,6 +24,13 @@ pub struct Subscription {
     pub feed_id: i64,
     pub title: String,
     pub feed_url: String,
+    #[serde(default)]
+    pub category: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SubscriptionResponse {
+    pub subscription: Subscription,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -105,6 +113,14 @@ pub fn subscriptions_url(host: &str) -> String {
     format!("{}/api/subscriptions", normalize_host(host))
 }
 
+pub fn subscription_url(host: &str, id: i64) -> String {
+    format!("{}/api/subscriptions/{id}", normalize_host(host))
+}
+
+pub fn subscription_update_body(category: Option<&str>) -> serde_json::Value {
+    serde_json::json!({ "subscription": { "category": category } })
+}
+
 pub fn token_url(host: &str) -> String {
     format!("{}/api/cli/token", normalize_host(host))
 }
@@ -136,6 +152,9 @@ pub fn entries_url(host: &str, query: &EntriesQuery<'_>) -> String {
     if let Some(feed_id) = query.feed_id {
         pairs.push(("feed_id", feed_id.to_string()));
     }
+    if let Some(category) = query.category.filter(|value| !value.is_empty()) {
+        pairs.push(("category", category.to_string()));
+    }
     if let Some(q) = query.q.filter(|value| !value.is_empty()) {
         pairs.push(("q", q.to_string()));
     }
@@ -163,6 +182,12 @@ pub fn entries_query_body(query: &EntriesQuery<'_>) -> serde_json::Value {
     }
     if let Some(feed_id) = query.feed_id {
         body.insert("feed_id".into(), serde_json::json!(feed_id));
+    }
+    if let Some(category) = query.category.filter(|value| !value.is_empty()) {
+        body.insert(
+            "category".into(),
+            serde_json::Value::String(category.to_string()),
+        );
     }
     if let Some(q) = query.q.filter(|value| !value.is_empty()) {
         body.insert("q".into(), serde_json::Value::String(q.to_string()));
@@ -218,6 +243,18 @@ impl Client {
 
     pub fn subscriptions(&self) -> Result<SubscriptionsResponse, Error> {
         self.get_json(&subscriptions_url(&self.host), false)
+    }
+
+    pub fn update_subscription(
+        &self,
+        id: i64,
+        category: Option<&str>,
+    ) -> Result<SubscriptionResponse, Error> {
+        parse_json(
+            self.authorized("PATCH", &subscription_url(&self.host, id))
+                .send_json(subscription_update_body(category)),
+            false,
+        )
     }
 
     pub fn entries(&self, query: &EntriesQuery<'_>) -> Result<EntriesResponse, Error> {
@@ -343,6 +380,10 @@ mod tests {
             "https://rdrift.app/api/subscriptions"
         );
         assert_eq!(
+            subscription_url("https://rdrift.app/", 7),
+            "https://rdrift.app/api/subscriptions/7"
+        );
+        assert_eq!(
             entry_url("https://rdrift.app/", 42),
             "https://rdrift.app/api/entries/42"
         );
@@ -363,13 +404,14 @@ mod tests {
             &EntriesQuery {
                 scope: Some("unread"),
                 feed_id: Some(2),
+                category: Some("apple"),
                 q: Some("hello world"),
                 limit: Some(20),
             },
         );
         assert_eq!(
             url,
-            "https://rdrift.app/api/entries?scope=unread&feed_id=2&q=hello%20world&limit=20"
+            "https://rdrift.app/api/entries?scope=unread&feed_id=2&category=apple&q=hello%20world&limit=20"
         );
     }
 
@@ -398,6 +440,7 @@ mod tests {
         let body = entries_query_body(&EntriesQuery {
             scope: Some("all"),
             feed_id: Some(2),
+            category: Some("apple"),
             q: Some("hello world"),
             limit: Some(20),
         });
@@ -406,6 +449,7 @@ mod tests {
             serde_json::json!({
                 "scope": "all",
                 "feed_id": 2,
+                "category": "apple",
                 "q": "hello world",
                 "limit": 20
             })
@@ -428,6 +472,27 @@ mod tests {
             entries_collection_url("https://rdrift.app/"),
             "https://rdrift.app/api/entries"
         );
+    }
+
+    #[test]
+    fn subscription_update_body_sends_null_to_clear() {
+        assert_eq!(
+            subscription_update_body(None),
+            serde_json::json!({ "subscription": { "category": null } })
+        );
+        assert_eq!(
+            subscription_update_body(Some("rails")),
+            serde_json::json!({ "subscription": { "category": "rails" } })
+        );
+    }
+
+    #[test]
+    fn subscription_category_defaults_when_absent() {
+        let subscription: Subscription = serde_json::from_str(
+            r#"{"id":1,"feed_id":2,"title":"DF","feed_url":"https://example.com/feed"}"#,
+        )
+        .unwrap();
+        assert_eq!(subscription.category, None);
     }
 
     #[test]

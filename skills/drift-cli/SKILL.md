@@ -16,20 +16,21 @@ Two jobs, one tool:
 
 - "what's new / unread / in my inbox"
 - read or summarize a subscribed article
-- search feeds / list subscriptions
+- search feeds / list subscriptions / organize feeds into categories
 - `drift` is missing, unauthorized, or not logged in
 - a timely, in-circle question (what did DHH / DF / TLDR just say; latest on a story they follow)
 
 Do **not** use for Rails or code conventions, project memory, company docs, or open-ended web research. Those stay in wiki / brain / web search. Do not scan the inbox before every coding answer.
 
-Do not use this skill for SavedItem / read-later, starring, marking read, or editing the Drift Rails app.
+Do not use this skill for SavedItem / read-later, starring, marking read, or editing the Drift Rails app. Recategorizing via `drift feeds categorize` is allowed.
 
 ## As a source
 
-1. `drift search "<query>"` (and `drift inbox` only if they asked what's new).
-2. Judge from `title` + `excerpt`. If nothing is on-point, say so and stop — do not pretend the feeds covered it.
-3. `drift show <id>` only for the one or two hits that actually answer the question.
-4. Cite feed + title + url. Feeds are journalism, not the user's settled judgment; do not let a post override current code or wiki notes.
+1. `drift feeds` first when the question is about a bucket (Apple, Rails, …) — if that `category` already exists, search with `--category` instead of guessing feed ids.
+2. `drift search "<query>"` (and `drift inbox` only if they asked what's new).
+3. Judge from `title` + `excerpt`. If nothing is on-point, say so and stop — do not pretend the feeds covered it.
+4. `drift show <id>` only for the one or two hits that actually answer the question.
+5. Cite feed + title + url. Feeds are journalism, not the user's settled judgment; do not let a post override current code or wiki notes.
 
 ## Core Rules
 
@@ -38,8 +39,10 @@ Do not use this skill for SavedItem / read-later, starring, marking read, or edi
 - If `drift` is already on PATH and needs a newer build: `drift update`. It does not need a login.
 - Default JSON is already raw (one line). Do **not** add `--output json`. Use `--output text` only when the user wants a table.
 - List first (`inbox` / `search` / `feeds`), then `show` only the ids that matter. Do not `show` every inbox row.
-- `--feed` takes **`feed_id`**, not the subscription `id`. Copy `feed_id` from `drift feeds`.
-- There is no mark-read, star, or save command. Do not invent one.
+- `--feed` and `feeds categorize` take **`feed_id`**, not the subscription `id`. Copy `feed_id` from `drift feeds`.
+- `--category` is the user-typed label, matched case-insensitively. Copy the name from `drift feeds` when one exists.
+- Recategorize only when the user asks to organize feeds. Reuse existing category names; do not invent a taxonomy unsolicited.
+- The one write command is `drift feeds categorize`. There is no mark-read, star, or save command. Do not invent one.
 - On `unauthorized` / `not logged in`, run `drift auth status`, then tell the user to run `drift auth login` themselves (it opens a browser). Do not ask them to paste a token.
 
 ## Command Map
@@ -48,15 +51,19 @@ Do not use this skill for SavedItem / read-later, starring, marking read, or edi
 |------|------|
 | Unread inbox | `drift inbox` |
 | Inbox for one feed | `drift inbox --feed <feed_id>` |
+| Inbox for one category | `drift inbox --category <name>` |
 | Search (read + unread) | `drift search "<query>"` |
+| Search one category | `drift search "<query>" --category <name>` |
 | Article body | `drift show <id>` |
 | List feeds | `drift feeds` |
+| Set a feed's category | `drift feeds categorize <feed_id> <name>` |
+| Clear a feed's category | `drift feeds categorize <feed_id>` |
 | Auth check | `drift auth status` |
 | Upgrade CLI | `drift update` |
 | `drift` not on PATH | run the install script, then user runs `drift auth login` |
 | First-time / expired login | user runs `drift auth login` |
 
-Optional: `--limit N` (1–50, server default 20) on `inbox` and `search`.
+Optional: `--limit N` (1–50, server default 20) on `inbox` and `search`. `--category` on `inbox` and `search`.
 
 ## JSON shapes
 
@@ -71,10 +78,12 @@ Optional: `--limit N` (1–50, server default 20) on `inbox` and `search`.
 `drift feeds`:
 
 ```json
-{"subscriptions":[{"id":1,"feed_id":2,"title":"Daring Fireball","feed_url":"https://..."}]}
+{"subscriptions":[{"id":1,"feed_id":2,"title":"Daring Fireball","feed_url":"https://...","category":"apple"}]}
 ```
 
-Use `entries[].id` with `show`. Use `subscriptions[].feed_id` with `--feed`.
+`category` is `null` when unset. `drift feeds categorize` returns `{"subscription":{...}}`.
+
+Use `entries[].id` with `show`. Use `subscriptions[].feed_id` with `--feed` and `feeds categorize`.
 
 `drift update`:
 
@@ -86,7 +95,7 @@ Use `entries[].id` with `show`. Use `subscriptions[].feed_id` with `--feed`.
 
 ## Common Mistakes
 
-- Passing subscription `id` to `--feed`
+- Passing subscription `id` to `--feed` or `feeds categorize`
 - Dumping every `show` body into the chat
 - Adding `--output json` (already the default)
 - Searching Drift for a Rails/wiki question
