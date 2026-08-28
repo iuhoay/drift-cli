@@ -29,7 +29,7 @@ Do not use this skill for SavedItem / read-later, starring, marking read, or edi
 1. `drift search "<query>"` (and `drift inbox` only if they asked what's new).
 2. Judge from `title` + `excerpt`. If nothing is on-point, say so and stop — do not pretend the feeds covered it.
 3. `drift show <id>` only for the one or two hits that actually answer the question.
-4. Cite feed + title + url. Feeds are journalism, not the user's settled judgment; do not let a post override current code or wiki notes.
+4. Cite id + feed + title + url. Feeds are journalism, not the user's settled judgment; do not let a post override current code or wiki notes.
 
 ## Core Rules
 
@@ -38,6 +38,7 @@ Do not use this skill for SavedItem / read-later, starring, marking read, or edi
 - If `drift` is already on PATH and needs a newer build: `drift update`. It does not need a login.
 - Default JSON is already raw (one line). Do **not** add `--output json`. Use `--output text` only when the user wants a table.
 - List first (`inbox` / `search` / `feeds`), then `show` only the ids that matter. Do not `show` every inbox row.
+- When listing `inbox` or `search` hits to the user, include each `id` next to the title. Never invite `show` or "say the `id`" unless those ids are in the list.
 - `--feed` takes **`feed_id`**, not the subscription `id`. Copy `feed_id` from `drift feeds`.
 - There is no mark-read, star, or save command. Do not invent one.
 - On `unauthorized` / `not logged in`, run `drift auth status`, then tell the user to run `drift auth login` themselves (it opens a browser). Do not ask them to paste a token.
@@ -94,6 +95,7 @@ Use `entries[].id` with `show`. Use `subscriptions[].feed_id` with `--feed`.
 - Treating `drift` as a local DB tool (`bin/rails runner`, etc.)
 - Mentioning `--token`, `--host`, or `DRIFT_TOKEN` unless the user is debugging auth or a non-prod host
 - Re-running the install script when `drift` is already on PATH — use `drift update`
+- Listing inbox/search without `id`, then telling the user to ask by `id`
 
 ## Reference
 
