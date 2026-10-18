@@ -69,6 +69,14 @@ pub struct FeedRef {
     pub title: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReadState {
+    pub id: i64,
+    pub read: bool,
+    #[serde(default)]
+    pub read_at: Option<String>,
+}
+
 #[derive(Debug, Deserialize)]
 struct TokenResponse {
     token: String,
@@ -120,6 +128,10 @@ pub fn authorize_url(host: &str, redirect_uri: &str, state: &str) -> String {
 
 pub fn entry_url(host: &str, id: i64) -> String {
     format!("{}/api/entries/{id}", normalize_host(host))
+}
+
+pub fn entry_read_url(host: &str, id: i64) -> String {
+    format!("{}/api/entries/{id}/read", normalize_host(host))
 }
 
 pub fn entries_collection_url(host: &str) -> String {
@@ -232,6 +244,14 @@ impl Client {
         self.get_json(&entry_url(&self.host, id), true)
     }
 
+    pub fn mark_read(&self, id: i64) -> Result<ReadState, Error> {
+        self.send_empty("POST", &entry_read_url(&self.host, id), true)
+    }
+
+    pub fn mark_unread(&self, id: i64) -> Result<ReadState, Error> {
+        self.send_empty("DELETE", &entry_read_url(&self.host, id), true)
+    }
+
     pub fn exchange_code(host: &str, code: &str) -> Result<String, Error> {
         let agent = ureq::AgentBuilder::new()
             .timeout(Duration::from_secs(TIMEOUT_SECS))
@@ -287,6 +307,13 @@ impl Client {
                 .send_json(entries_query_body(query)),
             false,
         )
+    }
+
+    fn send_empty<T>(&self, method: &str, url: &str, not_found_is_entry: bool) -> Result<T, Error>
+    where
+        T: for<'de> Deserialize<'de>,
+    {
+        parse_json(self.authorized(method, url).call(), not_found_is_entry)
     }
 }
 
@@ -345,6 +372,10 @@ mod tests {
         assert_eq!(
             entry_url("https://rdrift.app/", 42),
             "https://rdrift.app/api/entries/42"
+        );
+        assert_eq!(
+            entry_read_url("https://rdrift.app/", 42),
+            "https://rdrift.app/api/entries/42/read"
         );
     }
 
@@ -447,5 +478,16 @@ mod tests {
         assert_eq!(entry.author, None);
         assert_eq!(entry.published_at, None);
         assert_eq!(entry.body, None);
+    }
+
+    #[test]
+    fn read_state_parses_null_read_at() {
+        let state: ReadState = serde_json::from_str(
+            r#"{"id": 1, "read": false, "read_at": null}"#,
+        )
+        .unwrap();
+        assert_eq!(state.id, 1);
+        assert!(!state.read);
+        assert_eq!(state.read_at, None);
     }
 }

@@ -44,7 +44,7 @@ Unauthorized after a working install usually means the token was revoked on the 
 | `drift feeds` | Subscriptions; `title` is the custom title when set |
 | `drift update` | Replace this binary from GitHub Releases (no Drift token) |
 
-No mark-read, unread, star, subscribe, or saved-items commands.
+Mark read/unread with `drift read <id>` / `drift unread <id>`. No star, subscribe, or saved-items commands.
 
 ## Inbox vs show
 

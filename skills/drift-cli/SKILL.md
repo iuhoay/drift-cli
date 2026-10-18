@@ -22,7 +22,7 @@ Two jobs, one tool:
 
 Do **not** use for Rails or code conventions, project memory, company docs, or open-ended web research. Those stay in wiki / brain / web search. Do not scan the inbox before every coding answer.
 
-Do not use this skill for SavedItem / read-later, starring, marking read, or editing the Drift Rails app.
+Do not use this skill for SavedItem / read-later, starring, or editing the Drift Rails app.
 
 ## As a source
 
@@ -40,7 +40,7 @@ Do not use this skill for SavedItem / read-later, starring, marking read, or edi
 - List first (`inbox` / `search` / `feeds`), then `show` only the ids that matter. Do not `show` every inbox row.
 - When listing `inbox` or `search` hits to the user, include each `id` next to the title. Never invite `show` or "say the `id`" unless those ids are in the list.
 - `--feed` takes **`feed_id`**, not the subscription `id`. Copy `feed_id` from `drift feeds`.
-- There is no mark-read, star, or save command. Do not invent one.
+- Mark read with `drift read <id>` / `drift unread <id>`. There is no star or save command — do not invent one.
 - On `unauthorized` / `not logged in`, run `drift auth status`, then tell the user to run `drift auth login` themselves (it opens a browser). Do not ask them to paste a token.
 
 ## Command Map
@@ -51,6 +51,8 @@ Do not use this skill for SavedItem / read-later, starring, marking read, or edi
 | Inbox for one feed | `drift inbox --feed <feed_id>` |
 | Search (read + unread) | `drift search "<query>"` |
 | Article body | `drift show <id>` |
+| Mark read | `drift read <id>` |
+| Mark unread | `drift unread <id>` |
 | List feeds | `drift feeds` |
 | Auth check | `drift auth status` |
 | Upgrade CLI | `drift update` |
@@ -68,6 +70,14 @@ Optional: `--limit N` (1–50, server default 20) on `inbox` and `search`.
 ```
 
 `drift show 699` adds `author`, `has_full_content`, and `body` (plain text, no HTML).
+
+`drift read <id>` / `drift unread <id>`:
+
+```json
+{"id":699,"read":true,"read_at":"2026-10-18T08:00:00Z"}
+```
+
+`read_at` is null when unread.
 
 `drift feeds`:
 

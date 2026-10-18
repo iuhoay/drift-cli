@@ -4,7 +4,7 @@ mod config;
 mod update;
 
 use clap::{Parser, Subcommand, ValueEnum};
-use client::{Client, EntriesQuery, EntryDetail, EntrySummary, Subscription};
+use client::{Client, EntriesQuery, EntryDetail, EntrySummary, ReadState, Subscription};
 use config::Settings;
 use serde::Serialize;
 use std::process;
@@ -65,6 +65,10 @@ enum Command {
     },
     /// Show one entry body
     Show { id: i64 },
+    /// Mark an entry as read
+    Read { id: i64 },
+    /// Mark an entry as unread
+    Unread { id: i64 },
     /// Replace this binary with the latest GitHub Release
     Update,
 }
@@ -163,6 +167,16 @@ fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error>> {
                 OutputFormat::Json => print_json(&entry)?,
                 OutputFormat::Text => print_show(&entry),
             }
+        }
+        Command::Read { id } => {
+            let client = connect(cli.host, cli.token)?;
+            let state = client.mark_read(id)?;
+            print_read_state(output, &state)?;
+        }
+        Command::Unread { id } => {
+            let client = connect(cli.host, cli.token)?;
+            let state = client.mark_unread(id)?;
+            print_read_state(output, &state)?;
         }
         Command::Update => {
             let outcome = update::perform()?;
@@ -265,6 +279,23 @@ fn print_show(entry: &EntryDetail) {
     println!("{}", entry.published_at.as_deref().unwrap_or(""));
     println!();
     println!("{}", entry.body.as_deref().unwrap_or(""));
+}
+
+fn print_read_state(
+    output: OutputFormat,
+    state: &ReadState,
+) -> Result<(), Box<dyn std::error::Error>> {
+    match output {
+        OutputFormat::Json => print_json(state)?,
+        OutputFormat::Text => {
+            let status = if state.read { "read" } else { "unread" };
+            match &state.read_at {
+                Some(at) => println!("{}  {status}  {at}", state.id),
+                None => println!("{}  {status}", state.id),
+            }
+        }
+    }
+    Ok(())
 }
 
 fn ymd(value: &str) -> Option<&str> {
