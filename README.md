@@ -27,9 +27,11 @@ Non-interactive override: `drift auth login --token <token>` (the flag is hidden
 | `drift inbox [--feed ID] [--limit N]` | Unread entries (server default 20, max 50) |
 | `drift search <query> [--limit N]` | Search entries |
 | `drift show <id>` | Print one entry's `body` from the API |
+| `drift read <id>` | Mark an entry as read |
+| `drift unread <id>` | Mark an entry as unread |
 | `drift update` | Replace this binary with the latest GitHub Release |
 
-There is no mark-read, star, or saved-items command in v1. `drift update` talks to GitHub, not the Drift API, and does not need a login.
+There is no star or saved-items command. `drift update` talks to GitHub, not the Drift API, and does not need a login.
 
 ## Global flags
 
